@@ -1,48 +1,38 @@
 """
-Database Schemas
+Database Schemas for FoodReview
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model represents a MongoDB collection. The collection name is the
+lowercased class name (e.g., User -> "user").
 """
+from typing import List, Optional
+from pydantic import BaseModel, Field, EmailStr, HttpUrl
 
-from pydantic import BaseModel, Field
-from typing import Optional
-
-# Example schemas (replace with your own):
 
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    username: str = Field(..., min_length=3, max_length=30)
+    email: EmailStr
+    password_hash: str = Field(..., description="Hashed password (bcrypt)")
+    role: str = Field("user", description="user | admin")
+    profile_image: Optional[str] = Field(None, description="URL to profile image")
+    about: Optional[str] = Field(None, max_length=280)
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Restaurant(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    description: Optional[str] = Field(None, max_length=1000)
+    location: Optional[str] = Field(None, max_length=200)
+    cuisine_type: Optional[str] = Field(None, max_length=60)
+    average_rating: float = Field(0, ge=0, le=5)
+    images: List[str] = Field(default_factory=list)
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+
+class Review(BaseModel):
+    user_id: str = Field(..., description="ObjectId as string")
+    restaurant_id: str = Field(..., description="ObjectId as string")
+    rating: int = Field(..., ge=1, le=5)
+    review_text: Optional[str] = Field(None, max_length=2000)
+    images: List[str] = Field(default_factory=list, description="Image URLs")
+    # Optional breakdown fields
+    taste: Optional[int] = Field(None, ge=1, le=5)
+    ambience: Optional[int] = Field(None, ge=1, le=5)
+    service: Optional[int] = Field(None, ge=1, le=5)
